@@ -52,18 +52,5 @@ afterEvaluate {
                 }
             }
         }
-
-        repositories {
-            maven {
-                name = "GitHubPackages"
-
-                url = uri("https://maven.pkg.github.com/rayworks/RetrofitResultAdapter")
-
-                credentials {
-                    username = "${githubUserName}"
-                    password = "${githubToken}"
-                }
-            }
-        }
     }
 }
