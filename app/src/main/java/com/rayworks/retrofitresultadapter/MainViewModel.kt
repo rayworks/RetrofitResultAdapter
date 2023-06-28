@@ -6,17 +6,19 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.rayworks.resultadapter.Result
 import com.rayworks.resultadapter.ResultAdapterFactory
+import com.rayworks.retrofitresultadapter.network.Bar
 import com.rayworks.retrofitresultadapter.network.ErrorMsg
 import com.rayworks.retrofitresultadapter.network.Service
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.Interceptor
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
-import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.net.SocketTimeoutException
@@ -92,6 +94,22 @@ class MainViewModel : ViewModel() {
         } else {
             Log.e("test getTime---Err: ", tm.body().toString())
         }
+
+        service.getData().enqueue(object : Callback<Result<Bar>> {
+            override fun onResponse(call: Call<Result<Bar>>, response: Response<Result<Bar>>) {
+                if (response.body() is Result.Success<*>) {
+                    val barSuccess = response.body() as Result.Success<Bar>
+                    Log.i("test getData enqueue ---OK: ", barSuccess.data.toString())
+                } else {
+                    Log.e("test getData enqueue ---Err: ", response.body().toString())
+                }
+            }
+
+            override fun onFailure(call: Call<Result<Bar>>, t: Throwable) {
+                Log.e("test getData enqueue ---Err", t.message.toString())
+            }
+
+        })
     }
 }
 
