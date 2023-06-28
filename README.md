@@ -9,9 +9,28 @@ handling.
 
 ## Usage
 
+* Add the JitPack repository to your root build.gradle:
+
+```groovy
+allprojects {
+    repositories {
+        //...
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+
+* Add the dependency
+
+```groovy
+dependencies {
+    implementation 'com.github.rayworks:RetrofitResultAdapter:0.1.0'
+}
+```
+
 * Define your WebService interface
 
-```
+```kotlin
 import com.rayworks.resultadapter.Result
 
 interface Service {
@@ -24,7 +43,7 @@ interface Service {
 
 * Install the `ResultAdapterFactory`
 
-```
+```kotlin
 val retrofit = Retrofit.Builder()
     .baseUrl(host)
     .client(client)
@@ -35,7 +54,7 @@ val retrofit = Retrofit.Builder()
 
 * Process the response or error
 
-```
+```kotlin
 viewModelScope.launch(Dispatchers.IO) {
     val ans = service.getAnswers()
     when (ans) {
