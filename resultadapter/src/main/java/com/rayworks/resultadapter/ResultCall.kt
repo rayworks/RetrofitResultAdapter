@@ -1,5 +1,7 @@
 package com.rayworks.resultadapter
 
+import com.rayworks.resultadapter.error.ErrorMessage
+import com.rayworks.resultadapter.error.ErrorMessageConverter
 import com.rayworks.resultadapter.internal.CallDelegate
 import retrofit2.Call
 import retrofit2.Callback
@@ -9,16 +11,17 @@ import java.io.IOException
 /***
  * A customized [Call] with its result wrapped by [Result]
  */
-class ResultCall<T>(proxy: Call<T>) : CallDelegate<T, Result<T>>(proxy) {
+class ResultCall<T, E : ErrorMessage>(
+    proxy: Call<T>,
+    private val converter: ErrorMessageConverter<E>
+) : CallDelegate<T, Result<T>>(proxy) {
     override fun executeImpl(): Response<Result<T>> {
-
-        try {
+        return try {
             val response = proxy.execute()
-            return Response.success(extractNetworkData(response))
-
+            Response.success(extractNetworkData(response))
         } catch (e: Exception) {
             e.printStackTrace()
-            return Response.success(Result.NetworkError)
+            Response.success(Result.NetworkError)
         }
     }
 
@@ -35,7 +38,7 @@ class ResultCall<T>(proxy: Call<T>) : CallDelegate<T, Result<T>>(proxy) {
             val result = if (t is IOException) {
                 Result.NetworkError
             } else {
-                Result.Failure(-1, "unknown error")
+                Result.Failure(-1, msg = "unknown error")
             }
 
             callback.onResponse(this@ResultCall, Response.success(result))
@@ -48,8 +51,7 @@ class ResultCall<T>(proxy: Call<T>) : CallDelegate<T, Result<T>>(proxy) {
      * @return The actual data object or error info
      */
     private fun extractNetworkData(response: Response<T>): Result<T> {
-        val code = response.code()
-        val result = when (code) {
+        val result = when (val code = response.code()) {
             in 200 until 300 -> {
                 val body = response.body()
                 val successResult: Result<T> = Result.Success(body)
@@ -64,7 +66,13 @@ class ResultCall<T>(proxy: Call<T>) : CallDelegate<T, Result<T>>(proxy) {
                         err = reader.readText()
                     }
                 }
-                Result.Failure(code, err)
+                try {
+                    val errObj = converter.convert(err)
+                    Result.Failure(code, error = errObj)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Result.Failure(code, msg = e.message)
+                }
             }
 
             else -> {
@@ -74,5 +82,5 @@ class ResultCall<T>(proxy: Call<T>) : CallDelegate<T, Result<T>>(proxy) {
         return result
     }
 
-    override fun cloneImpl() = ResultCall(proxy.clone())
+    override fun cloneImpl() = ResultCall(proxy.clone(), converter)
 }
