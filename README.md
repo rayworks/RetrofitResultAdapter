@@ -24,7 +24,7 @@ allprojects {
 
 ```groovy
 dependencies {
-    implementation 'com.github.rayworks:RetrofitResultAdapter:0.1.0'
+    implementation 'com.github.rayworks:RetrofitResultAdapter:0.2.0'
 }
 ```
 
@@ -43,6 +43,7 @@ interface Service {
 
 ```kotlin
 import com.rayworks.resultadapter.error.ErrorMessage
+
 class ErrorMsg : ErrorMessage()
 ```
 

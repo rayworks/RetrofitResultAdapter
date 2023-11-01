@@ -6,7 +6,7 @@ plugins {
 ext {
     PUBLISH_GROUP_ID = 'com.rayworks.resultadapter'
     PUBLISH_ARTIFACT_ID = 'resultadapter'
-    PUBLISH_VERSION = '0.1.0'
+    PUBLISH_VERSION = '0.2.0'
 }
 
 apply from: "${rootDir}/publish.gradle"

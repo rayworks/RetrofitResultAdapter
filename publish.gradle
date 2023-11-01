@@ -52,5 +52,19 @@ afterEvaluate {
                 }
             }
         }
+
+        // uncomment the following code to publish the new artifact with auth info
+//        repositories {
+//            maven {
+//                name = "GitHubPackages"
+//
+//                url = uri("https://maven.pkg.github.com/rayworks/RetrofitResultAdapter")
+//
+//                credentials {
+//                    username = "${githubUserName}"
+//                    password = "${githubToken}"
+//                }
+//            }
+//        }
     }
 }
