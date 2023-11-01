@@ -1,23 +1,23 @@
-package com.rayworks.retrofitresultadapter
+package com.rayworks.resultadapter
 
-import android.util.Log
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.rayworks.resultadapter.Result
-import com.rayworks.resultadapter.ResultAdapterFactory
 import com.rayworks.resultadapter.error.ErrorMessageConverter
-import com.rayworks.retrofitresultadapter.network.Bar
-import com.rayworks.retrofitresultadapter.network.ErrorMsg
-import com.rayworks.retrofitresultadapter.network.Service
-import kotlinx.coroutines.Dispatchers
+import com.rayworks.resultadapter.network.Bar
+import com.rayworks.resultadapter.network.ErrorMsg
+import com.rayworks.resultadapter.network.Service
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.runTest
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert
+import org.junit.Before
+import org.junit.Test
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -26,15 +26,17 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
-inline fun <reified T> Gson.jsonToObject(str: String): T {
-    return fromJson(str, object : TypeToken<T>() {}.type)
-}
-
-class MainViewModel : ViewModel() {
-    private val service: Service
+class AdapterTest {
     private val gson = Gson()
+    private lateinit var service: Service
+    private val testDispatcher = StandardTestDispatcher(TestCoroutineScheduler())
 
-    init {
+    inline fun <reified T> Gson.jsonToObject(str: String): T {
+        return fromJson(str, object : TypeToken<T>() {}.type)
+    }
+
+    @Before
+    fun setUp() {
         val mockInterceptor = MockInterceptor()
         val mockClient = OkHttpClient.Builder()
             .addInterceptor(mockInterceptor)
@@ -55,69 +57,58 @@ class MainViewModel : ViewModel() {
         service = retrofit.create(Service::class.java)
     }
 
-
-    fun executeRequest() {
-        viewModelScope.launch(Dispatchers.IO) {
+    @Test
+    fun testRespResult() = runTest(testDispatcher) {
+        launch {
             val bar = service.getBar()
-            Log.i("test bar", bar.toString())
-
-            val bars = service.getBars()
-            Log.i("test bars", bars.toString())
-
-            val res = service.getFoobar()
-            Log.i("test foobar", res.toString())
-
-            val ans = service.getIllegal()
-            when (ans) {
-                is Result.NetworkError ->
-                    Log.e("Err", "NetworkError")
-
-                is Result.Failure -> {
-                    if (ans.error != null) {
-                        val errorMsg = ans.error as ErrorMsg // your error msg object
-                        Log.i("error occurred : ", errorMsg.toString())
-                    } else {
-                        Log.i("error occurred : ", "code :${ans.code}")
-                    }
-                }
-
-                is Result.Success ->
-                    Log.i(">>>", "data recved : ${ans.data}")
+            if (bar is Result.Success) {
+                Assert.assertEquals(Bar("baz"), bar.data)
             }
 
+            val bars = service.getBars()
+            Assert.assertTrue(bars is Result.Success)
+            if (bars is Result.Success) {
+                Assert.assertEquals(listOf(Bar("baz1"), Bar("baz2")), bars.data)
+            }
 
-            val other = service.getOtherInfo()
-            Log.i("test other", other.toString())
+            val res = service.getFoobar()
+            Assert.assertTrue(res is Result.NetworkError)
+
+            val ans = service.getIllegal()
+            Assert.assertTrue(ans is Result.Failure)
+            if (ans is Result.Failure) {
+                Assert.assertEquals(ErrorMsg(403, "account token expired"), ans.error)
+            }
         }
 
+    }
+
+    @Test
+    fun testCalls() {
         val data = service.getData()
         val resp = data.execute()
 
         if (resp.body() is Result.Success<*>) {
-            Log.i("test getData---OK: ", resp.body().toString())
+            Assert.assertEquals(Bar("foobar007"), (resp.body() as? Result.Success)?.data)
         } else {
-            Log.e("test getData---Err: ", resp.body().toString())
+            Assert.fail("Object bar not equal")
         }
 
         val tm = service.getTime().execute()
-        if (tm.body() is Result.Success<*>) {
-            Log.i("test getTime---OK: ", tm.body().toString())
-        } else {
-            Log.e("test getTime---Err: ", tm.body().toString())
-        }
+        Assert.assertTrue(tm.body() is Result.NetworkError)
 
         service.getData().enqueue(object : Callback<Result<Bar>> {
             override fun onResponse(call: Call<Result<Bar>>, response: Response<Result<Bar>>) {
                 if (response.body() is Result.Success<*>) {
                     val barSuccess = response.body() as Result.Success<Bar>
-                    Log.i("test getData enqueue ---OK: ", barSuccess.data.toString())
+                    Assert.assertEquals(Bar("foobar007"), barSuccess)
                 } else {
-                    Log.e("test getData enqueue ---Err: ", response.body().toString())
+                    Assert.fail("Object bar not equal in async call")
                 }
             }
 
             override fun onFailure(call: Call<Result<Bar>>, t: Throwable) {
-                Log.e("test getData enqueue ---Err", t.message.toString())
+                Assert.fail("Fetching Object bar shouldn't fail")
             }
 
         })

@@ -1,5 +1,7 @@
 package com.rayworks.resultadapter
 
+import com.rayworks.resultadapter.error.ErrorMessage
+import com.rayworks.resultadapter.error.ErrorMessageConverter
 import com.rayworks.resultadapter.internal.ResultAdapter
 import retrofit2.Call
 import retrofit2.CallAdapter
@@ -10,7 +12,9 @@ import java.lang.reflect.Type
 /***
  * Creates custom [CallAdapter] based on return type of the declared service interface methods
  */
-class ResultAdapterFactory : CallAdapter.Factory() {
+class ResultAdapterFactory<T : ErrorMessage>(private val converter: ErrorMessageConverter<T>) :
+    CallAdapter.Factory() {
+
     override fun get(
         returnType: Type,
         annotations: Array<out Annotation>,
@@ -21,7 +25,7 @@ class ResultAdapterFactory : CallAdapter.Factory() {
             when (getRawType(callType)) {
                 Result::class.java -> {
                     val resultType = getParameterUpperBound(0, callType as ParameterizedType)
-                    ResultAdapter(resultType)
+                    ResultAdapter(resultType, converter)
                 }
 
                 else -> null
