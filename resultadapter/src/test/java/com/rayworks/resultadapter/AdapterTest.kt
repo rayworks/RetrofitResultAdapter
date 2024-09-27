@@ -18,6 +18,8 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -26,6 +28,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
+@RunWith(JUnit4::class)
 class AdapterTest {
     private val gson = Gson()
     private lateinit var service: Service
@@ -101,7 +104,7 @@ class AdapterTest {
             override fun onResponse(call: Call<Result<Bar>>, response: Response<Result<Bar>>) {
                 if (response.body() is Result.Success<*>) {
                     val barSuccess = response.body() as Result.Success<Bar>
-                    Assert.assertEquals(Bar("foobar007"), barSuccess)
+                    Assert.assertEquals(Bar("foobar007"), barSuccess.data)
                 } else {
                     Assert.fail("Object bar not equal in async call")
                 }
